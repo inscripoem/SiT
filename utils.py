@@ -17,7 +17,9 @@ import numpy as np
 import torch
 from torch import nn
 import torch.distributed as dist
+from torchvision import transforms
 
+import skimage
 
 import argparse
 
@@ -421,3 +423,31 @@ def multi_scale(samples, model):
     v /= 3
     v /= v.norm()
     return v
+
+# 计算PSNR和SSIM
+def calculate_psnr_ssim(output: torch.Tensor, target: torch.Tensor):
+    # 定义反归一化
+    rgb_mean = torch.tensor([0.485, 0.456, 0.406])
+    rgb_std = torch.tensor([0.229, 0.224, 0.225])
+    inv_normalize = transforms.Normalize(
+        mean= -rgb_mean / rgb_std,
+        std= 1/rgb_std)
+    batch_size = output.shape[0]
+    output = inv_normalize(output.detach()).numpy().astype(np.float32)
+    target = inv_normalize(target.detach()).numpy().astype(np.float32)
+    psnr, ssim = 0, 0
+    for i in range(batch_size):
+        img_output = output[i]
+        img_target = target[i]
+        psnr += skimage.metrics.peak_signal_noise_ratio(img_output, img_target, data_range=1.0)
+        ssim += skimage.metrics.structural_similarity(img_output, img_target, data_range=1.0, channel_axis=0)
+    return psnr/batch_size, ssim/batch_size
+
+# 基于t_cls与s_cls作为传入变量,计算教师与学生网络的正例预测准确度
+def calculate_contrastive_accuracy(t_cls, s_cls):
+    # 计算正例预测准确度
+    t_cls = t_cls.detach().cpu().numpy()
+    s_cls = s_cls.detach().cpu().numpy()
+    t_pred = np.argmax(t_cls, axis=1)
+    s_pred = np.argmax(s_cls, axis=1)
+    return np.sum(t_pred == s_pred) / len(t_pred)

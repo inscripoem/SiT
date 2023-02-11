@@ -47,7 +47,7 @@ class pets(VisionDataset):
         transforms: Optional[Callable] = None,
         transform: Optional[Callable] = None,
         target_transform: Optional[Callable] = None,
-        download: bool = False,
+        download: bool = True,
     ):
         self._split = verify_str_arg(split, "split", ("trainval", "test"))
         if isinstance(target_types, str):
