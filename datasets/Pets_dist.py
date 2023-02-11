@@ -18,7 +18,7 @@ class pets_dist(VisionDataset):
         target_transform: Optional[Callable] = None
     ) -> None:
         super().__init__(root, transforms=transforms, transform=transform, target_transform=target_transform)
-        self._base_folder = Path(self.root) / "oxford-iiit-pet"
+        self._base_folder = Path(self.root)
         self._images_folder = self._base_folder / "images"
         self._anns_folder = self._base_folder / "annotations"
         self._segs_folder = self._anns_folder / "trimaps"
