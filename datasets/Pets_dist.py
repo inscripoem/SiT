@@ -22,13 +22,13 @@ class pets_dist(VisionDataset):
         self._images_folder = self._base_folder / "images"
         self._anns_folder = self._base_folder / "annotations"
         self._segs_folder = self._anns_folder / "trimaps"
-        self._dist_folder = self._base_folder / "dist"
+        self._dist_folder = Path("./dist/Pets")
 
         self._image_ids = []
         self._labels = []
         
         if not self._dist_folder.exists():
-            self._dist_folder.mkdir()
+            self._dist_folder.mkdir(parents=True)
         if is_pretrain:
             ratio = list(ratio.split(":"))
             dist_file = self._dist_folder / f"Pets_dog_{ratio[0]}_cat_{ratio[1]}.txt"
