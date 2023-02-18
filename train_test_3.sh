@@ -1,6 +1,6 @@
-DATASET1="data_neg_9999_pos_1"
-DATASET2="data_neg_9875_pos_125"
-DATASET3="data_neg_5000_pos_5000"
+DATASET1="data_neg_9995_pos_5"
+DATASET2="data_neg_9375_pos_625"
+DATASET3="data_neg_7500_pos_2500"
 
 YELLOW1="\033[33m"
 YELLOW2="\033[0m"

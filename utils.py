@@ -443,9 +443,7 @@ def calculate_psnr_ssim(output: torch.Tensor, target: torch.Tensor):
         ssim += skimage.metrics.structural_similarity(img_output, img_target, data_range=1.0, channel_axis=0)
     return psnr/batch_size, ssim/batch_size
 
-# 基于t_cls与s_cls作为传入变量,计算教师与学生网络的正例预测准确度
 def calculate_contrastive_accuracy(t_cls, s_cls):
-    # 计算正例预测准确度
     t_cls = t_cls.detach().cpu().numpy()
     s_cls = s_cls.detach().cpu().numpy()
     t_pred = np.argmax(t_cls, axis=1)
