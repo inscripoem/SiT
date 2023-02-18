@@ -3,6 +3,7 @@ import sys
 
 from datasets.Pets import pets
 from datasets.Pets_dist import pets_dist
+from datasets.large_data_dist import large_data_dist
 
 def build_dataset(args, is_train, trnsfrm=None, training_mode='finetune'):
 
@@ -16,6 +17,12 @@ def build_dataset(args, is_train, trnsfrm=None, training_mode='finetune'):
     elif args.data_set == 'Pets_dist':
         split = 'trainval' if is_train else 'test'
         dataset = pets_dist(os.path.join(args.data_location), split=split, is_pretrain=args.is_pretrain, ratio=args.ratio, transform=trnsfrm)
+
+        nb_classes = 2
+    
+    elif args.data_set == 'large_data_dist':
+        split = 'trainval' if is_train else 'test'
+        dataset = large_data_dist(os.path.join(args.data_location), split=split, ratio=args.ratio, transform=trnsfrm)
 
         nb_classes = 2
 

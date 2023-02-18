@@ -30,7 +30,7 @@ class pets_dist(VisionDataset):
         if not self._dist_folder.exists():
             self._dist_folder.mkdir(parents=True)
         if is_pretrain:
-            ratio = list(ratio.split(":"))
+            ratio = list(ratio.split("_"))
             dist_file = self._dist_folder / f"Pets_dog_{ratio[0]}_cat_{ratio[1]}.txt"
         if not dist_file.exists():
             dog_ids = []
