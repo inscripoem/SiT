@@ -64,10 +64,6 @@ class pets_dist(VisionDataset):
         self._images = [self._images_folder / f"{image_id}.jpg" for image_id in self._image_ids]
 
 
-        
-
-        self._images = [self._images_folder / f"{image_id}.jpg" for image_id in self._image_ids]
-
     def __len__(self) -> int:
         return len(self._images)
     
