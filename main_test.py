@@ -121,8 +121,8 @@ def train_SiT(args):
     print(f"Data loaded: there are {len(dataset)} images.")
 
     # building networks 
-    student = vits.__dict__[args.model](drop_path_rate=args.drop_path_rate)
-    teacher = vits.__dict__[args.model]()
+    student = vits.__dict__[args.model](drop_path_rate=args.drop_path_rate, img_size=[64])
+    teacher = vits.__dict__[args.model](img_size=[64])
     embed_dim = student.embed_dim
 
     student = FullPipline(student, CLSHead(embed_dim, args.out_dim), RECHead(embed_dim))
@@ -254,7 +254,7 @@ def train_one_epoch(student, teacher, teacher_without_ddp, simclr_loss, data_loa
             c_acc = utils.calculate_contrastive_accuracy(s_cls, t_cls)
 
             # Calculate psnr and ssim
-            psnr, ssim = utils.calculate_psnr_ssim(s_recons[0: min(15, bz)].cpu(), clean_crops[0][0: min(15, bz)].cpu())
+            psnr, ssim = utils.calculate_psnr_ssim(s_recons[0:].cpu(), clean_crops[0][0:].cpu())
 
             
 
