@@ -5,5 +5,5 @@ imageio
 tabulate
 colorama
 scikit-image
-
+rich
 
