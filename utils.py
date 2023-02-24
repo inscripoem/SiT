@@ -443,10 +443,3 @@ def calculate_psnr_ssim(output: torch.Tensor, target: torch.Tensor):
         psnr += skimage.metrics.peak_signal_noise_ratio(img_output, img_target, data_range=1.0)
         ssim += skimage.metrics.structural_similarity(img_output, img_target, data_range=1.0, channel_axis=0)
     return psnr/batch_size, ssim/batch_size
-
-def calculate_contrastive_accuracy(t_cls, s_cls):
-    t_cls = t_cls.detach().cpu().numpy()
-    s_cls = s_cls.detach().cpu().numpy()
-    t_pred = np.argmax(t_cls, axis=1)
-    s_pred = np.argmax(s_cls, axis=1)
-    return np.sum(t_pred == s_pred) / len(t_pred)

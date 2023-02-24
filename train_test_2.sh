@@ -19,6 +19,6 @@ do
 
     echo -e "${YELLOW1}Start training dataset $i......${YELLOW2}"
     TRAIN_DATASET=DATASET$i
-    python -m torch.distributed.launch --nproc_per_node=1 --use_env main_test.py --batch_size 16 --epochs 400 --data_set "ImageNet" --data_location "/app/dataset/${!TRAIN_DATASET}" --num_workers 4 --output_dir "/app/output/${!TRAIN_DATASET}" | tee logs/${MONTH}/${DAY}/train_${!TRAIN_DATASET}_at_${HOUR}_${MINUTE}_${SECOND}.log
+    python -m torch.distributed.launch --nproc_per_node=1 --use_env main_test.py --batch_size 256 --epochs 400 --lmbda 5 --data_set "ImageNet" --data_location "/app/dataset/${!TRAIN_DATASET}" --num_workers 4 --output_dir "/app/output/${!TRAIN_DATASET}" | tee logs/${MONTH}/${DAY}/train_${!TRAIN_DATASET}_at_${HOUR}_${MINUTE}_${SECOND}.log
     echo -e "${YELLOW1}Training complete.${YELLOW2}"
 done
