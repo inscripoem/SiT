@@ -6,4 +6,4 @@ tabulate
 colorama
 scikit-image
 rich
-
+tensorboard
