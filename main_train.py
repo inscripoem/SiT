@@ -105,7 +105,7 @@ def train_SiT_pretrain(args):
     if args.data_set == 'ImageNet':
         dataset = torchvision.datasets.ImageFolder(args.data_location, transform=transform)
     else:
-        dataset, _ = load_dataset.build_dataset(args, True, trnsfrm=transform, training_mode = 'SSL')
+        dataset = load_dataset.build_dataset(args, True, trnsfrm=transform, training_mode = 'SSL')
 
     data_loader = torch.utils.data.DataLoader(dataset,
         shuffle=True, batch_size=args.batch_size,
@@ -165,7 +165,7 @@ def train_SiT_pretrain(args):
     # activating tensorboard
     writter = SummaryWriter(f"{args.output_dir}/logs")
 
-    writter.add_graph(student, torch.randn(1, 3, 64, 64))
+    writter.add_graph(student.cpu(), torch.randn(1, 3, 64, 64))
     
     for epoch in range(start_epoch, args.epochs):
         save_recon = os.path.join(args.output_dir, 'reconstruction_samples')
@@ -293,6 +293,10 @@ def train_SiT_pretrain(args):
                      'epoch': epoch}
         with (Path(args.output_dir) / "log.txt").open("a") as f:
             f.write(json.dumps(log_stats) + "\n")
+    
+    total_time = time.time() - start_time
+    total_time_str = str(datetime.timedelta(seconds=int(total_time)))
+    print('Training time {}'.format(total_time_str))
     
     writter.close()
 
