@@ -63,7 +63,7 @@ def get_args_parser(parser: argparse.ArgumentParser = None):
     # Dataset
     parser.add_argument('--data_set', default='Pets', type=str, 
                         choices=['STL10', 'MNIST', 'CIFAR10', 'CIFAR100', 'Flowers', 'Aircraft', 
-                                 'Cars', 'ImageNet5p', 'ImageNet', 'TinyImageNet', 'Pets', 'Pets_dist', 'CUB',
+                                 'Cars', 'ImageNet5p', 'ImageNet', 'TinyImageNet', 'Pets', 'Pets_dist', 'CUB', 'large_data_dist',
                                  'PASCALVOC', 'MSCOCO', 'VisualGenome500'], 
                         help='Name of the dataset.')
     parser.add_argument('--data_location', default='/path/to/dataset', type=str, help='Dataset location.')
