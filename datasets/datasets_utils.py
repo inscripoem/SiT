@@ -170,7 +170,7 @@ class DataAugmentationSiT(object):
         # first global crop
         self.global_transfo1 = transforms.Compose([
             transforms.RandomResizedCrop(224, scale=(0.2, 1.), interpolation=Image.BICUBIC),
-            transforms.Resize(64, interpolation=Image.BICUBIC),
+            transforms.Resize(args.image_size, interpolation=Image.BICUBIC),
             flip_and_color_jitter,
             GaussianBlur(1.0),
             normalize,
@@ -178,7 +178,7 @@ class DataAugmentationSiT(object):
         # second global crop
         self.global_transfo2 = transforms.Compose([
             transforms.RandomResizedCrop(224, scale=(0.2, 1.), interpolation=Image.BICUBIC),
-            transforms.Resize(64, interpolation=Image.BICUBIC),
+            transforms.Resize(args.image_size, interpolation=Image.BICUBIC),
             flip_and_color_jitter,
             GaussianBlur(0.1),
             Solarization(0.2),
@@ -216,4 +216,53 @@ class DataAugmentationSiT(object):
         masks_crops.append(im_mask)
         
         return clean_crops, corrupted_crops, masks_crops
+
+class transform_test(object):
+    def __init__(self, args):
+        self.transform = transforms.Compose([
+            transforms.Resize(args.image_size, interpolation=Image.BICUBIC),
+            transforms.ToTensor(),
+            transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
+        ])
+
+class transform_train(object):
+    def __init__(self, args):
+        self.transform = transforms.Compose([
+            transforms.Resize(args.image_size, interpolation=Image.BICUBIC),
+            transforms.RandomHorizontalFlip(p=0.5),
+            transforms.RandomApply(
+                [transforms.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.2, hue=0.1)],
+                p=0.8
+            ),
+            transforms.RandomGrayscale(p=0.2),
+            transforms.ToTensor(),
+            transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
+        ])
+
+class DistSampler(torch.utils.data.Sampler):
+    def __init__(self, dataset, batch_size, num_batches):
+        self.dataset = dataset
+        self.batch_size = batch_size
+        self.num_batches = int(num_batches)
+    def __iter__(self):
+        for _ in range(self.num_batches):
+            yield torch.randperm(len(self.dataset)).tolist()[:self.batch_size]
+    def __len__(self):
+        return self.num_batches
+
+class collate_batch(object): 
+    def __init__(self, drop_replace=0., drop_align=1):
+        self.drop_replace = drop_replace
+        self.drop_align = drop_align
+        
+    def __call__(self, batch):
+        batch = torch.utils.data.dataloader.default_collate(batch)
+        
+        if self.drop_replace > 0:
+            batch[0][1][0], batch[0][2][0] = GMML_replace_list(batch[0][0][0], batch[0][1][0], batch[0][2][0],
+                                                                            max_replace=self.drop_replace, align=self.drop_align)
+            batch[0][1][1], batch[0][2][1] = GMML_replace_list(batch[0][0][1], batch[0][1][1], batch[0][2][1],
+                                                                            max_replace=self.drop_replace, align=self.drop_align)
+        
+        return batch
 

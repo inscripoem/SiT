@@ -6,4 +6,6 @@ tabulate
 colorama
 scikit-image
 rich
+thop
 tensorboard
+gradio

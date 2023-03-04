@@ -301,6 +301,73 @@ class MetricLogger(object):
             print('{} Total time: {} ({:.6f} s / it)'.format(
                 header, total_time_str, total_time / len(iterable)))
 
+class ProgressBar(Progress):
+    def __init__(self, header):
+        self.progress = Progress(
+            TextColumn(header, justify="left"),
+            BarColumn(),
+            MofNCompleteColumn(),
+            TextColumn("{task.description}", justify="left"),
+            )
+        if torch.cuda.is_available():
+            self.log_msg = ' '.join([
+                            'eta: {eta}',
+                            '{meters}',
+                            'iter_time: {time}',
+                            'max mem: {memory:.0f}'
+                        ])
+        else:
+            self.log_msg = ' '.join([
+                            'eta: {eta}',
+                            '{meters}',
+                            'iter_time: {time}'
+                        ])
+    def init_time(self):
+        self.start_time = time.time()
+        self.end = time.time()
+        self.iter_time = SmoothedValue(fmt='{avg:.6f}')
+    
+    def update_task(self, progress, task_index, task, meters):
+        eta_seconds = self.iter_time.global_avg * (task.total - task.completed)
+        eta_str = str(datetime.timedelta(seconds=int(eta_seconds)))
+        MB = 1024.0 * 1024.0
+        meters_str = ' '.join('{}: {:.4f}'.format(item[0], item[1]) for item in meters.items())
+        if torch.cuda.is_available():
+            progress.update(
+                        task_index, advance=1, 
+                        description=self.log_msg.format(
+                            eta=eta_str,
+                            meters=meters_str,
+                            time=str(self.iter_time),
+                            memory=torch.cuda.max_memory_allocated() / MB)
+                        )
+        else:
+            progress.update(
+                        task_index, advance=1, 
+                        description=self.log_msg.format(
+                            eta=eta_str,
+                            meters=meters_str,
+                            time=str(self.iter_time))
+                        )
+        self.end = time.time()
+    
+    def update_iter(self):
+        self.iter_time.update(time.time() - self.end)
+
+    def update_total_time(self, progress: Progress, task_index, task, meters):
+        total_time = time.time() - self.start_time
+        total_time_str = str(datetime.timedelta(seconds=int(total_time)))
+        meters_str = ' '.join('{}: {:.4f}'.format(item[0], item[1]) for item in meters.items())
+        progress.update(
+            task_index, description=' '.join([
+                            'total_time: {} ({:.6f} s/it)',
+                            '{}'
+                        ]).format(
+                            total_time_str, total_time / task.total,
+                            meters_str
+                        )
+        )
+
 
 def get_sha():
     cwd = os.path.dirname(os.path.abspath(__file__))

@@ -56,7 +56,7 @@ class large_data_dist(VisionDataset):
     def __getitem__(self, index: int) -> Tuple[Any, Any]:
         image = Image.open(self._images[index]).convert("RGB")
         target: Any = []
-        target.append(self._labels[index])
+        target.append(0 if self._labels[index] == 'neg' else 1)
         if self.transforms:
             image, target = self.transforms(image, target)
         return image, target
@@ -87,15 +87,12 @@ class large_data_dist(VisionDataset):
             with open(self._index_file, 'w') as f:
                 json.dump(index, f, sort_keys=True, indent=4, separators=(',', ': '))
             print(f'索引建立完毕，共有{total_neg_num}张阴性样本，{total_pos_num}张阳性样本，其中')
-            for data_ in index['data']:
-                print(f'{data_}共有{index["num"][data_]["neg_num"]}张阴性样本，{index["num"][data_]["pos_num"]}张阳性样本')
         else:
             print('--检测到索引文件，开始读取索引--')
             with open(self._index_file, 'r') as f:
                 index = json.load(f)
             print(f'索引读取完毕，共有{index["num"]["total_neg_num"]}张阴性样本，{index["num"]["total_pos_num"]}张阳性样本，其中')
-            for data_ in index['data']:
-                print(f'{data_}共有{index["num"][data_]["neg_num"]}张阴性样本，{index["num"][data_]["pos_num"]}张阳性样本')
+        print(f'样本分布：{list(index["num"].values())[0:-2]}')
         return index
         
     def get_split(self, index, split):
@@ -135,11 +132,9 @@ class large_data_dist(VisionDataset):
             with open(self._trainval_dist_file, 'w') as f:
                 json.dump(trainval_index, f, sort_keys=True, indent=4, separators=(',', ': '))
             print(f'测试集划分建立完毕，共有{test_index["num"]["total_neg_num"]}张阴性样本，{test_index["num"]["total_pos_num"]}张阳性样本，其中')
-            for data_ in test_index['data']:
-                print(f'{data_}共有{test_index["num"][data_]["neg_num"]}张阴性样本，{test_index["num"][data_]["pos_num"]}张阳性样本')
+            print(f'样本分布：{list(test_index["num"].values())[2:]}')
             print(f'训练集划分建立完毕，共有{trainval_index["num"]["total_neg_num"]}张阴性样本，{trainval_index["num"]["total_pos_num"]}张阳性样本，其中')
-            for data_ in trainval_index['data']:
-                print(f'{data_}共有{trainval_index["num"][data_]["neg_num"]}张阴性样本，{trainval_index["num"][data_]["pos_num"]}张阳性样本')
+            print(f'样本分布：{list(trainval_index["num"].values())[2:]}')
         else:
             print('--检测到测试集划分文件，开始读取测试集分布--')
             print(f'本次构建数据集: {split}')
@@ -149,13 +144,11 @@ class large_data_dist(VisionDataset):
                 trainval_index = json.load(f)
             if split == 'test':
                 print(f'测试集划分读取完毕，共有{test_index["num"]["total_neg_num"]}张阴性样本，{test_index["num"]["total_pos_num"]}张阳性样本，其中')
-                for data_ in test_index['data']:
-                    print(f'{data_}共有{test_index["num"][data_]["neg_num"]}张阴性样本，{test_index["num"][data_]["pos_num"]}张阳性样本')
+                print(f'样本分布：{list(test_index["num"].values())[0:-2]}')
                 return test_index
             elif split == 'trainval':
                 print(f'训练集划分读取完毕，共有{trainval_index["num"]["total_neg_num"]}张阴性样本，{trainval_index["num"]["total_pos_num"]}张阳性样本，其中')
-                for data_ in trainval_index['data']:
-                    print(f'{data_}共有{trainval_index["num"][data_]["neg_num"]}张阴性样本，{trainval_index["num"][data_]["pos_num"]}张阳性样本')
+                print(f'样本分布：{list(trainval_index["num"].values())[0:-2]}')
                 return trainval_index
     def get_dist(self, split_index, dist_file, ratio):
         if not dist_file.exists():
@@ -206,14 +199,12 @@ class large_data_dist(VisionDataset):
             with open(dist_file, 'w') as f:
                 json.dump(dist_index, f, sort_keys=True, indent=4, separators=(',', ': '))
             print(f'预训练分布建立完毕，共有{dist_index["num"]["total_neg_num"]}张阴性样本，{dist_index["num"]["total_pos_num"]}张阳性样本，其中')
-            for data_ in dist_index['data']:
-                print(f'{data_}共有{dist_index["num"][data_]["neg_num"]}张阴性样本，{dist_index["num"][data_]["pos_num"]}张阳性样本')
+            print(f'样本分布：{list(dist_index["num"].values())[0:-2]}')
         else:
             print('--检测到预训练分布文件，开始读取预训练分布--')
             with open(dist_file, 'r') as f:
                 dist_index = json.load(f)
             print(f'预训练分布读取完毕，共有{dist_index["num"]["total_neg_num"]}张阴性样本，{dist_index["num"]["total_pos_num"]}张阳性样本，其中')
-            for data_ in dist_index['data']:
-                print(f'{data_}共有{dist_index["num"][data_]["neg_num"]}张阴性样本，{dist_index["num"][data_]["pos_num"]}张阳性样本')
+            print(f'样本分布：{list(dist_index["num"].values())[0:-2]}')
         return dist_index
     

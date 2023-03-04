@@ -86,23 +86,30 @@ class pets_dist(VisionDataset):
                     for image_id, label in zip(self._image_ids, self._labels):
                         f.write(f'{image_id} {label}\n')
             else:
+                print('--Pets分布集已存在, 读取中--')
                 with open(dist_file) as file:
                     for line in file:
                         image_id, label = line.strip().split()
                         self._image_ids.append(image_id)
                         self._labels.append(label)
-                print(f'Pets数据集读取完毕, 共有{len(self._image_ids)}张图片，前两张图片的文件名为{self._image_ids[0]}和{self._image_ids[1]}')
+                print(f'Pets分布集读取完毕, 共有{len(self._image_ids)}张图片，前两张图片的文件名为{self._image_ids[0]}和{self._image_ids[1]}')
         else:        
             if split == "trainval":
                 dist_file = trainval_dist_file
             elif split == "test":
                 dist_file = test_dist_file
+            dog_ids = []
+            cat_ids = []
             with open(dist_file) as f:
                 for line in f:
                     image_id, label = line.strip().split()
                     self._image_ids.append(image_id)
                     self._labels.append(label)
-            print(f'Pets测试集读取完毕, 共有{len(self._image_ids)}张图片，前两张图片的文件名为{self._image_ids[0]}和{self._image_ids[1]}')
+                    if label == 'dog':
+                        dog_ids.append(image_id)
+                    else:
+                        cat_ids.append(image_id)
+            print(f'Pets{split}集读取完毕, 共有{len(self._image_ids)}张图片，{len(dog_ids)}张狗，{len(cat_ids)}张猫，前两张图片的文件名为{self._image_ids[0]}和{self._image_ids[1]}')
         self._images = [self._images_folder / f"{image_id}.jpg" for image_id in self._image_ids]
         if not self._images[0].exists():
             raise RuntimeError(f"未找到{self._image_ids[0]}，请检查数据集路径")
@@ -115,7 +122,7 @@ class pets_dist(VisionDataset):
     def __getitem__(self, index: int) -> Tuple[Any, Any]:
         image = Image.open(self._images[index]).convert("RGB")
         target: Any = []
-        target.append(self._labels[index])
+        target.append(0 if self._labels[index] == 'dog' else 1)
         if self.transforms:
             image, target = self.transforms(image, target)
 

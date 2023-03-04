@@ -1,35 +1,26 @@
-import time
-from rich.progress import Progress,TextColumn,BarColumn,TaskProgressColumn,MofNCompleteColumn
-import rich.progress
+import torch
+import vision_transformer as vits
+from main import FullPipline
+
+student = vits.__dict__['vit_small'](img_size=[64], num_classes=2)
 
 
-for epoch in range(10):
-    header = 'Epoch: [{}/{}]'.format(epoch, 10)
-    with Progress(
-            TextColumn(header, justify="left"),
-            BarColumn(),
-            MofNCompleteColumn(),
-            TextColumn("{task.description}", justify="left"),
-        ) as progress:
-        task = progress.add_task("", total=len(range(100)))
-        i=0
-        for iteration in range(100):
-            space_fmt = ':' + str(len(str(len(range(100))))) + 'd'
-            log_msg = '\t'.join([
-                    header,
-                    '[{0' + space_fmt + '}/{1}]',
-                    'eta: {eta}',
-                    '{meters}',
-                    'time: {time}',
-                    'data: {data}'
-                ])
-            progress.update(
-                        task, advance=1, 
-                        description=log_msg.format(
-                            i, len(range(100)), eta='123',
-                            meters='str(self)',
-                            time='str(iter_time)', data='str(data_time)')
-                        )
-            time.sleep(0.1)
-            i+=1
 
+pretrain_dict = torch.load('./output/large_data_dist/checkpoint.pth')['student']
+dict_to_load = {}
+for k, v in pretrain_dict.items():
+    if k.startswith('backbone'):
+        dict_to_load[k.replace('backbone.', '')] = v
+
+model_dict = student.state_dict()
+model_dict.update(dict_to_load)
+student.load_state_dict(model_dict)
+
+for n, p in student.named_parameters():
+    if not n.startswith('head'):
+        p.requires_grad = False
+
+student.cuda()
+test_data = torch.randn(1, 3, 64, 64).cuda()
+output = student(test_data, classify=True)
+print(output)
