@@ -239,6 +239,7 @@ class transform_train(object):
             transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
         ])
 
+# 已弃用
 class DistSampler(torch.utils.data.Sampler):
     def __init__(self, dataset, batch_size, num_batches):
         self.dataset = dataset

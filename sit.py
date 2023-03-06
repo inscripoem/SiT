@@ -1,7 +1,7 @@
-import logging
 import os
 import math
 import sys
+import json
 from pathlib import Path
 
 import torch
@@ -42,9 +42,9 @@ class SiT(object):
         self.wd_schedule = wd_schedule
         self.momentum_schedule = momentum_schedule
 
-        self.writter = SummaryWriter(log_dir=Path(args.output_dir).joinpath("logs"))
+        default_tensorboard_path = Path(args.output_dir).joinpath("logs")
+        self.writter = SummaryWriter(log_dir=default_tensorboard_path if not args.tensorboard_log_path else args.tensorboard_log_path)
 
-        logging.basicConfig(filename=Path(self.writter.log_dir).joinpath('training.log'), level=logging.DEBUG)
     
     def train(self, start_epoch, trainval_data_loader):
         for epoch in range(start_epoch, self.args.epochs):
@@ -55,12 +55,13 @@ class SiT(object):
 
             header = 'Epoch: [{}/{}]'.format(epoch + 1, self.args.epochs)
             progress_bar = utils.ProgressBar(header)
+            metric_logger = utils.MetricLogger(delimiter="  ")
             with progress_bar.progress as progress:
                 total_iters = len(trainval_data_loader)
                 task = progress.add_task("", total=total_iters)
                 progress_bar.init_time()
                 for it, ((clean_crops, corrupted_crops, masks_crops), _) in enumerate(trainval_data_loader):
-                    progress_bar.update_iter()
+                    
 
                     it = total_iters * epoch + it  # global training iteration
                     for i, param_group in enumerate(self.optimizer.param_groups):
@@ -143,11 +144,15 @@ class SiT(object):
                     for k, v in meters.items():
                         self.writter.add_scalar(k, v, it)
                     
+                    metric_logger.update(**meters)
+
+                    progress_bar.update_iter()
                     progress_bar.update_task(progress, task, progress._tasks[task], meters)
 
-                logging.debug('{} Stats: {}'.format(header, ' '.join('{}: {:.4f}'.format(item[0], item[1]) for item in meters.items())))
                 progress_bar.update_total_time(progress, task, progress._tasks[task], meters)
-                
+
+            train_stats = {k: meter.global_avg for k, meter in metric_logger.meters.items()}
+
             save_dict = {
                 'student': self.student.state_dict(),
                 'teacher': self.teacher.state_dict(),
@@ -161,6 +166,10 @@ class SiT(object):
             torch.save(save_dict, os.path.join(self.args.output_dir, 'checkpoint.pth'))
             if self.args.saveckp_freq and epoch % self.args.saveckp_freq == 0:
                 torch.save(save_dict, os.path.join(self.args.output_dir, f'checkpoint{epoch:04}.pth'))
+            
+            log_stats = {**train_stats, 'epoch': epoch + 1}
+            with open(os.path.join(self.args.output_dir, 'log.txt'), 'a') as f:
+                f.write(json.dumps(log_stats) + '\n')
 
             
 

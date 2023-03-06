@@ -48,7 +48,7 @@ def classify(img, img_size=64):
     img = transform(img).unsqueeze(0).cuda()
     output = student(img, classify=True)
     output.cpu().detach().tolist()
-    return '阴性(狗): {:.2f} \n阳性(猫): {:.2f} \n 综合判别: {}'.format(output[0][0], output[0][1], '阳性(猫)' if output[0][1] > output[0][0] else '阴性(狗)')
+    return '阴性: {:.2f} \n阳性: {:.2f} \n 综合判别: {}'.format(output[0][0], output[0][1], '阳性' if output[0][1] > output[0][0] else '阴性')
 
 def test(batch_size, progress=gr.Progress()):
     global dataset
@@ -60,7 +60,7 @@ def test(batch_size, progress=gr.Progress()):
     total = len(dataset)
     for i, (image, label) in progress.tqdm(enumerate(dataloader)):
         image = image.cuda()
-        label = label[0].cuda()
+        label = label.cuda()
         output = student(image, classify=True)
         pred = output.argmax(dim=1, keepdim=True)
         correct += pred.eq(label.view_as(pred)).sum().item()

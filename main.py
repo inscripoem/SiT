@@ -81,6 +81,8 @@ def get_args_parser(parser: argparse.ArgumentParser = None):
     parser.add_argument('--is_pretrain', default=True, type=utils.bool_flag, help="Define if it's pre-train.")
     parser.add_argument('--ratio', default="", type=str, help="The distribution ratio(neg_pos)/label usage of the dataset(percentage).")
     parser.add_argument('--pretrain_model_path', type=str, default='', help='Path to pretrained model')
+    parser.add_argument('--pretrain_adjust_mode', type=str, default='linear', help='How to train the downstream task')
+    parser.add_argument('--tensorboard_log_path', type=str, default='', help='Path to tensorboard log')
     return parser
 
 # replace from other images
@@ -106,23 +108,28 @@ def main():
     # Load the dataset
     transform = datasets_utils.DataAugmentationSiT(args)
     if args.is_pretrain:
-        train_dataset = load_dataset.build_dataset(args, is_train=True, trnsfrm=transform)
+        train_dataset = load_dataset.build_dataset(args, split='train', trnsfrm=transform)
         train_data_loader = torch.utils.data.DataLoader(train_dataset,
-        shuffle=True, batch_size=args.batch_size,
-        num_workers=args.num_workers, pin_memory=True, drop_last=True, 
-        collate_fn=datasets_utils.collate_batch(args.drop_replace, args.drop_align))
+            shuffle=True, batch_size=args.batch_size,
+            num_workers=args.num_workers, pin_memory=True, drop_last=False, 
+            collate_fn=datasets_utils.collate_batch(args.drop_replace, args.drop_align))
     else:
         transform_train = datasets_utils.transform_train(args).transform
-        train_dataset = load_dataset.build_dataset(args, is_train=True, trnsfrm=transform_train)
+        train_dataset = load_dataset.build_dataset(args, split='train', trnsfrm=transform_train)
         train_data_loader = torch.utils.data.DataLoader(train_dataset,
-            batch_sampler= datasets_utils.DistSampler(train_dataset, args.batch_size, args.ratio),
-            num_workers=args.num_workers, pin_memory=True)
+            shuffle=True, batch_size=args.batch_size,
+            num_workers=args.num_workers, pin_memory=True, drop_last=False)
         
-        transform_val = datasets_utils.transform_test(args).transform
-        val_dataset = load_dataset.build_dataset(args, is_train=True, trnsfrm=transform_val)
+        transform_valtest = datasets_utils.transform_test(args).transform
+        val_dataset = load_dataset.build_dataset(args, split='val', trnsfrm=transform_valtest)
         val_dataset_loader = torch.utils.data.DataLoader(val_dataset,
-            batch_sampler= datasets_utils.DistSampler(train_dataset, int(args.batch_size / 8), args.ratio),
-            num_workers=args.num_workers, pin_memory=True)
+            shuffle=True, batch_size=args.batch_size,
+            num_workers=args.num_workers, pin_memory=True, drop_last=False)
+        
+        test_dataset = load_dataset.build_dataset(args, split='test', trnsfrm=transform_valtest)
+        test_dataset_loader = torch.utils.data.DataLoader(test_dataset,
+            shuffle=True, batch_size=args.batch_size,
+            num_workers=args.num_workers, pin_memory=True, drop_last=False)
     
     # Create models
     example_input = torch.rand(1, 3, args.image_size, args.image_size)
@@ -148,7 +155,7 @@ def main():
         print(f"Student FLOPs: {flops/1e9:.2f}G, Params: {params/1e6:.2f}M")
 
     else:
-        student = vits.__dict__[args.model](img_size=[args.image_size], num_classes=2)
+        student = vits.__dict__[args.model](drop_path_rate=args.drop_path_rate, img_size=[args.image_size], num_classes=2)
         
         student_copy = copy.deepcopy(student)
         flops, params = profile(student_copy, (example_input,))
@@ -198,8 +205,8 @@ def main():
         sit = SiT(args, device, student, teacher, optimizer, fp16_scaler, lr_schedule, wd_schedule, momentum_schedule)
         sit.train(start_epoch, train_data_loader)
     else:
-        classify = Classify(args, device, student, optimizer, fp16_scaler, lr_schedule, wd_schedule, momentum_schedule)
-        classify.main(start_epoch, train_data_loader, val_dataset_loader)
+        classify = Classify(args, device, student, optimizer, fp16_scaler, lr_schedule, wd_schedule)
+        classify.main(start_epoch, train_data_loader, val_dataset_loader, test_dataset_loader)
 
     total_time = time.time() - start_time
     total_time_str = str(datetime.timedelta(seconds=int(total_time)))
