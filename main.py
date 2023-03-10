@@ -25,7 +25,7 @@ from classify import Classify
 import utils
 import vision_transformer as vits
 from vision_transformer import CLSHead, RECHead
-import torchvision
+from torchsummaryX import summary
 
 from thop import profile
 
@@ -83,6 +83,7 @@ def get_args_parser(parser: argparse.ArgumentParser = None):
     parser.add_argument('--pretrain_model_path', type=str, default='', help='Path to pretrained model')
     parser.add_argument('--pretrain_adjust_mode', type=str, default='linear', help='How to train the downstream task')
     parser.add_argument('--tensorboard_log_path', type=str, default='', help='Path to tensorboard log')
+    parser.add_argument('--patch_size', type=int, default=16, help="Patch size of ViT model")
     return parser
 
 # replace from other images
@@ -134,15 +135,16 @@ def main():
     # Create models
     example_input = torch.rand(1, 3, args.image_size, args.image_size)
     if args.is_pretrain:
-        student = vits.__dict__[args.model](drop_path_rate=args.drop_path_rate, img_size=[args.image_size])
-        teacher = vits.__dict__[args.model](img_size=[args.image_size])
+        student = vits.__dict__[args.model](drop_path_rate=args.drop_path_rate, img_size=[args.image_size], patch_size=args.patch_size)
+        teacher = vits.__dict__[args.model](img_size=[args.image_size], patch_size=args.patch_size)
         embed_dim = student.embed_dim
 
-        student = FullPipline(student, CLSHead(embed_dim, args.out_dim), RECHead(embed_dim))
-        teacher = FullPipline(teacher, CLSHead(embed_dim, args.out_dim), RECHead(embed_dim))
+        student = FullPipline(student, CLSHead(embed_dim, args.out_dim), RECHead(embed_dim, patch_size=args.patch_size))
+        teacher = FullPipline(teacher, CLSHead(embed_dim, args.out_dim), RECHead(embed_dim, patch_size=args.patch_size))
         
         student_copy = copy.deepcopy(student)
         flops, params = profile(student_copy, (example_input,))
+        #df = summary(student_copy, example_input)
 
         student, teacher = student.to(device), teacher.to(device)
         # teacher and student start with the same parameters
@@ -155,18 +157,19 @@ def main():
         print(f"Student FLOPs: {flops/1e9:.2f}G, Params: {params/1e6:.2f}M")
 
     else:
-        student = vits.__dict__[args.model](drop_path_rate=args.drop_path_rate, img_size=[args.image_size], num_classes=2)
+        student = vits.__dict__[args.model](drop_path_rate=args.drop_path_rate, img_size=[args.image_size], num_classes=2, patch_size=args.patch_size)
         
         student_copy = copy.deepcopy(student)
         flops, params = profile(student_copy, (example_input,))
+        #df = summary(student_copy, example_input)
 
         student = student.to(device)
 
         print(f"Model is built: it is {args.model} network.")
         print(f"Model FLOPs: {flops/1e9:.2f}G, Params: {params/1e6:.2f}M")
-    
     with open(Path(args.output_dir) / "model.txt", "w") as f:
         f.write(json.dumps({"flops": f'{flops/1e9:.2f}G', "params": f'{params/1e6:.2f}M',}))
+        #f.write(json.dumps(df, indent=4))
     
     # Define optimizer
     optimizer = torch.optim.AdamW(utils.get_params_groups(student))

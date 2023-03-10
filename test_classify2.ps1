@@ -10,15 +10,16 @@ if ($DATASET -eq "pets_dist") {
 }
 
 python main.py `
---batch_size 128 `
---patch_size 8 `
---epochs 800 `
---lmbda 5 `
+--batch_size 256 `
+--epochs 200 `
+--warmup_epochs 10 `
+--lr 0.0005 `
 --data_set $DATASET `
 --data_location $DATA_LOCATION `
---num_workers 2 `
---output_dir "./output/large_data_dist/img_128_patch_8/10000_10000/800_epoch" `
+--num_workers 4 `
+--output_dir "./output/large_data_dist_classify/10000_10000/100/lr_5e-4/img_128/200_epoch" `
 --image_size 128 `
---is_pretrain 1 `
---ratio '10000_10000' `
---tensorboard_log_path "./output/large_data_dist/img_128_patch_8/10000_10000/tensorboard/800_epoch"
+--is_pretrain 0 `
+--ratio '100' `
+--tensorboard_log_path "./output/large_data_dist_classify/10000_10000/100/lr_5e-4/img_128/tensorboard/200_epoch" `
+--pretrain_model_path "./output/large_data_dist/img_128_patch_16/10000_10000/800_epoch/checkpoint.pth"

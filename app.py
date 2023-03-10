@@ -59,6 +59,7 @@ def test(batch_size, progress=gr.Progress()):
     correct = 0
     total = len(dataset)
     for i, (image, label) in progress.tqdm(enumerate(dataloader)):
+        torch.cuda.empty_cache()
         image = image.cuda()
         label = label.cuda()
         output = student(image, classify=True)
@@ -67,6 +68,11 @@ def test(batch_size, progress=gr.Progress()):
     return '\nTest set: Accuracy: {}/{} ({:.0f}%)\n'.format(
         correct, total,
         100. * correct / total)
+
+def delete_model():
+    global student
+    student.cpu()
+    student = None
 
 if __name__ == '__main__':
     with gr.Blocks() as app:
@@ -81,7 +87,12 @@ if __name__ == '__main__':
                     img_size = gr.Slider(minimum=32, maximum=512, step=16, value=64, label='图片尺寸')
                     btn = gr.Button(value='加载模型')
                 model_msg = gr.Textbox(label='加载输出')
+                with gr.Row():
+                    clear_cache = gr.Button(value='清除显存')
+                    del_model = gr.Button(value='删除模型')
                 btn.click(load_model, inputs=[model_path, img_size], outputs=[model_msg])
+                clear_cache.click(torch.cuda.empty_cache)
+                del_model.click(delete_model)
         with gr.Tabs():
             with gr.TabItem('分类'):   
                 with gr.Row():
@@ -107,4 +118,4 @@ if __name__ == '__main__':
                 dataset.change(load_dataset, inputs=[dataset, dataset_path, img_size], outputs=[dataset_msg])
                 btn3.click(test, inputs=[batch_size], outputs=[output2])
 
-    app.queue(concurrency_count=1).launch()
+    app.queue(concurrency_count=1).launch(server_port=17890)

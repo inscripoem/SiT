@@ -41,11 +41,12 @@ class Classify(object):
             dict_to_load = {}
             for k, v in pretrain_dict.items():
                 if k.startswith('backbone'):
-                    dict_to_load[k.replace('backbone.', '')] = v
+                    if v.shape == self.student.state_dict()[k.replace('backbone.', '')].shape:
+                        dict_to_load[k.replace('backbone.', '')] = v
 
             model_dict = self.student.state_dict()
             model_dict.update(dict_to_load)
-            self.student.load_state_dict(model_dict)
+            self.student.load_state_dict(model_dict, strict=False)
 
             if args.pretrain_adjust_mode == 'linear':
                 for n, p in self.student.named_parameters():
@@ -85,7 +86,7 @@ class Classify(object):
             with open(os.path.join(self.args.output_dir, 'log.txt'), 'a') as f:
                 f.write(json.dumps(log_stats) + '\n')
         print(f'Epoch {self.args.epochs} training complete. Start testing ...')
-        test_stats = self.test(header, test_data_loader)
+        test_stats = self.test(test_data_loader)
         print(f'Test complete. Test stats: {test_stats}')
         with open(os.path.join(self.args.output_dir, 'log_test.txt'), 'a') as f:
             f.write(json.dumps(test_stats))
@@ -239,7 +240,7 @@ class Classify(object):
                     progress_bar.update_iter()
                     progress_bar.update_task(progress, task, progress._tasks[task], meters)
         test_acc = 100. * correct / total
-        self.writter.add_pr_curve('test_pr_curve', total_labels, total_pred, 0)
+        self.writter.add_pr_curve('test_pr_curve', torch.tensor(total_labels), torch.tensor(total_pred), 0)
         return {'acc/test_acc': test_acc}
 
 

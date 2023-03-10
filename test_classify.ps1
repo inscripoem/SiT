@@ -17,11 +17,12 @@ python main.py `
 --data_set $DATASET `
 --data_location $DATA_LOCATION `
 --num_workers 4 `
---output_dir "./output/large_data_dist_classify/from_scratch/lr_5e-4/50_epoch" `
+--output_dir "./output/large_data_dist_classify/10000_10000/100/lr_5e-4/img_128/50_epoch" `
 --image_size 128 `
 --is_pretrain 0 `
 --ratio '100' `
---tensorboard_log_path "./output/large_data_dist_classify/from_scratch/lr_5e-4/tensorboard/50_epoch"
+--tensorboard_log_path "./output/large_data_dist_classify/10000_10000/100/lr_5e-4/img_128/tensorboard/50_epoch" `
+--pretrain_model_path "./output/large_data_dist/img_128_patch_16/10000_10000/800_epoch/checkpoint.pth"
 
 python main.py `
 --batch_size 256 `
@@ -31,11 +32,12 @@ python main.py `
 --data_set $DATASET `
 --data_location $DATA_LOCATION `
 --num_workers 4 `
---output_dir "./output/large_data_dist_classify/from_scratch/lr_5e-4/100_epoch" `
+--output_dir "./output/large_data_dist_classify/10000_10000/100/lr_5e-4/img_128/100_epoch" `
 --image_size 128 `
 --is_pretrain 0 `
 --ratio '100' `
---tensorboard_log_path "./output/large_data_dist_classify/from_scratch/lr_5e-4/tensorboard/100_epoch"
+--tensorboard_log_path "./output/large_data_dist_classify/10000_10000/100/lr_5e-4/img_128/tensorboard/100_epoch" `
+--pretrain_model_path "./output/large_data_dist/img_128_patch_16/10000_10000/800_epoch/checkpoint.pth"
 
 python main.py `
 --batch_size 256 `
@@ -45,22 +47,9 @@ python main.py `
 --data_set $DATASET `
 --data_location $DATA_LOCATION `
 --num_workers 4 `
---output_dir "./output/large_data_dist_classify/from_scratch/lr_5e-4/200_epoch" `
+--output_dir "./output/large_data_dist_classify/10000_10000/100/lr_5e-4/img_128/200_epoch" `
 --image_size 128 `
 --is_pretrain 0 `
 --ratio '100' `
---tensorboard_log_path "./output/large_data_dist_classify/from_scratch/lr_5e-4/tensorboard/200_epoch"
-
-python main.py `
---batch_size 256 `
---epochs 500 `
---warmup_epochs 10 `
---lr 0.0005 `
---data_set $DATASET `
---data_location $DATA_LOCATION `
---num_workers 4 `
---output_dir "./output/large_data_dist_classify/from_scratch/lr_1e-3/500_epoch" `
---image_size 128 `
---is_pretrain 0 `
---ratio '100' `
---tensorboard_log_path "./output/large_data_dist_classify/from_scratch/lr_1e-3/tensorboard/500_epoch"
+--tensorboard_log_path "./output/large_data_dist_classify/10000_10000/100/lr_5e-4/img_128/tensorboard/200_epoch" `
+--pretrain_model_path "./output/large_data_dist/img_128_patch_16/10000_10000/800_epoch/checkpoint.pth"
