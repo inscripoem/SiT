@@ -1,6 +1,8 @@
 import torch
+import numpy as np
 from torchvision import transforms
 from PIL import Image
+from sklearn.metrics import confusion_matrix
 import vision_transformer as vits
 from datasets.load_dataset import pets_dist, large_data_dist
 import gradio as gr
@@ -12,7 +14,7 @@ def load_model(ckp_path, img_size=64):
     global student
     if ckp_path is None:
         return '请在左边框选择模型！'
-    student = vits.__dict__['vit_small'](img_size=[img_size], num_classes=2)
+    student = vits.__dict__['vit_small'](img_size=[img_size], num_classes=2, drop_path_rate=0.1)
     checkpoint = torch.load(ckp_path.name)['student']
     msg = student.load_state_dict(checkpoint)
     print('Loaded model with msg: ', msg)
@@ -39,8 +41,8 @@ def load_dataset(dataset_name = 'Pets', dataset_path = '', img_size=64):
 def classify(img, img_size=64):
     global student
     transform = transforms.Compose([      
+            transforms.Resize(img_size, interpolation=Image.BICUBIC),
             transforms.ToTensor(),
-            transforms.Resize(img_size),
             transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
         ])
     if student is None:
@@ -55,19 +57,35 @@ def test(batch_size, progress=gr.Progress()):
     global student
     if student is None or dataset is None:
         return '请先加载模型或数据集!'
-    dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=False, num_workers=2, pin_memory=True)
+    dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=False, num_workers=2, pin_memory=True, drop_last=False)
     correct = 0
     total = len(dataset)
-    for i, (image, label) in progress.tqdm(enumerate(dataloader)):
-        torch.cuda.empty_cache()
-        image = image.cuda()
-        label = label.cuda()
-        output = student(image, classify=True)
-        pred = output.argmax(dim=1, keepdim=True)
-        correct += pred.eq(label.view_as(pred)).sum().item()
-    return '\nTest set: Accuracy: {}/{} ({:.0f}%)\n'.format(
+    total_preds = torch.tensor([], dtype=torch.long)
+    total_labels = torch.tensor([], dtype=torch.long)
+    with torch.no_grad():
+        for i, (image, label) in progress.tqdm(enumerate(dataloader)):
+            torch.cuda.empty_cache()
+            image = image.cuda()
+            label = label.cuda()
+            output = student(image, classify=True)
+            pred = output.argmax(dim=1, keepdim=True)
+            correct += pred.eq(label.view_as(pred)).sum().item()
+            total_preds = torch.cat((total_preds, pred.cpu()), dim=0)
+            total_labels = torch.cat((total_labels, label.cpu()), dim=0)
+    #cm = confusion_matrix(total_labels.numpy(), total_preds.numpy())
+    cm = torch.zeros(2, 2, dtype=torch.int)
+    for i in range(len(total_labels)):
+        cm[total_labels[i], total_preds[i]] += 1
+    acc_report = 'Test set: Accuracy: {}/{} ({:.4f}%)\n'.format(
         correct, total,
         100. * correct / total)
+    cm_report = '\nConfusion Matrix:\n' + \
+                '         |  Pred 0 |  Pred 1 |\n' + \
+                '---------|---------|---------|\n' + \
+                'Actual 0 |' + f'{cm[0][0]:^9}' + '|' + f'{cm[0][1]:^9}' + '|\n' + \
+                'Actual 1 |' + f'{cm[1][0]:^9}' + '|' + f'{cm[1][1]:^9}' + '|\n'
+    print(acc_report + cm_report)
+    return acc_report + cm_report
 
 def delete_model():
     global student
@@ -84,7 +102,7 @@ if __name__ == '__main__':
                 model_path = gr.File(label='模型')
             with gr.Column():
                 with gr.Row():
-                    img_size = gr.Slider(minimum=32, maximum=512, step=16, value=64, label='图片尺寸')
+                    img_size = gr.Slider(minimum=32, maximum=512, step=16, value=128, label='图片尺寸')
                     btn = gr.Button(value='加载模型')
                 model_msg = gr.Textbox(label='加载输出')
                 with gr.Row():
@@ -106,16 +124,18 @@ if __name__ == '__main__':
                 dataset_path = gr.Textbox(label='数据集路径', value='G:\DeepLearning\SiT_docker\dataset\large_data', placeholder='path/to/datadet', interactive=True)
                 with gr.Row():
                     with gr.Column():
-                        dataset = gr.Dropdown(label='数据集', choices=['Pets', 'large_data'], value='large_data')
+                        with gr.Row():
+                            dataset = gr.Dropdown(label='数据集', choices=['Pets', 'large_data'], value='large_data')
+                            btn4 = gr.Button(value='加载数据集')
                     with gr.Column():
-                        batch_size = gr.Slider(minimum=16, maximum=512, step=16, value=1, label='batch size')
+                        batch_size = gr.Slider(minimum=16, maximum=512, step=16, value=128, label='batch size')
                 with gr.Row():
                     with gr.Column():
                         dataset_msg = gr.Textbox(label='数据集加载输出')
                     with gr.Column():
                         btn3 = gr.Button(value='开始测试')
                 output2 = gr.Textbox(label='输出')
-                dataset.change(load_dataset, inputs=[dataset, dataset_path, img_size], outputs=[dataset_msg])
+                btn4.click(load_dataset, inputs=[dataset, dataset_path, img_size], outputs=[dataset_msg])
                 btn3.click(test, inputs=[batch_size], outputs=[output2])
 
     app.queue(concurrency_count=1).launch(server_port=17890)

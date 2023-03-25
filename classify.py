@@ -49,15 +49,19 @@ class Classify(object):
             self.student.load_state_dict(model_dict, strict=False)
 
             if args.pretrain_adjust_mode == 'linear':
+                print('Adjusting pretrain weight with linear mode ...')
                 for n, p in self.student.named_parameters():
                     if not n.startswith('head'):
                         p.requires_grad = False
+            else:
+                print('Adjusting pretrain weight with finetune mode ...')
 
         default_tensorboard_path = Path(args.output_dir).joinpath("logs")
         self.writter = SummaryWriter(log_dir=default_tensorboard_path if not args.tensorboard_log_path else args.tensorboard_log_path)
 
     
     def main(self, start_epoch, train_data_loader, val_data_loader, test_data_loader):
+        best_val_acc = 0.0
         for epoch in range(start_epoch, self.args.epochs):
             if '_' in self.args.ratio:
                 print('请检查比例设定！')
@@ -81,7 +85,9 @@ class Classify(object):
             torch.save(save_dict, os.path.join(self.args.output_dir, 'checkpoint.pth'))
             if self.args.saveckp_freq and epoch % self.args.saveckp_freq == 0:
                 torch.save(save_dict, os.path.join(self.args.output_dir, f'checkpoint{epoch:04}.pth'))
-            
+            if val_stats['acc/val_acc'] > best_val_acc:
+                best_val_acc = val_stats['acc/val_acc']
+                torch.save(save_dict, os.path.join(self.args.output_dir, 'checkpoint_best.pth'))
             log_stats = {**dict(list(train_stats.items()) + list(val_stats.items())), 'epoch': epoch + 1}
             with open(os.path.join(self.args.output_dir, 'log.txt'), 'a') as f:
                 f.write(json.dumps(log_stats) + '\n')
@@ -89,6 +95,7 @@ class Classify(object):
         test_stats = self.test(test_data_loader)
         print(f'Test complete. Test stats: {test_stats}')
         with open(os.path.join(self.args.output_dir, 'log_test.txt'), 'a') as f:
+            f.truncate(0)
             f.write(json.dumps(test_stats))
 
             
@@ -218,6 +225,10 @@ class Classify(object):
         total_labels = []
         total_pred = []
         progress_bar = utils.ProgressBar('Test')
+        test_model = self.student
+        checkpoint = torch.load(Path(self.args.output_dir).joinpath('checkpoint.pth'))['student']
+        test_model.load_state_dict(checkpoint)
+        test_model.to(self.device).eval()
         with progress_bar.progress as progress:
             total_iters = len(test_data_loader)
             task = progress.add_task("", total=total_iters)
@@ -227,7 +238,7 @@ class Classify(object):
                     images = images.to(self.device)
                     total_labels.append(labels)
                     labels = labels.to(self.device)
-                    s_cls = self.student(images, classify=True)
+                    s_cls = test_model(images, classify=True)
 
                     pred = s_cls.argmax(dim=1, keepdim=True)
                     total_pred.append(pred)
@@ -239,9 +250,46 @@ class Classify(object):
                         }
                     progress_bar.update_iter()
                     progress_bar.update_task(progress, task, progress._tasks[task], meters)
+
         test_acc = 100. * correct / total
-        self.writter.add_pr_curve('test_pr_curve', torch.tensor(total_labels), torch.tensor(total_pred), 0)
-        return {'acc/test_acc': test_acc}
+
+        checkpoint_best = torch.load(Path(self.args.output_dir).joinpath('checkpoint_best.pth'))['student']
+        test_model.load_state_dict(checkpoint_best)
+        test_model.to(self.device).eval()
+        correct = 0
+        total_preds = torch.tensor([], dtype=torch.long)
+        total_labels = torch.tensor([], dtype=torch.long)
+        progress_bar = utils.ProgressBar('Test_best')
+        with progress_bar.progress as progress:
+            total_iters = len(test_data_loader)
+            task = progress.add_task("", total=total_iters)
+            progress_bar.init_time()
+            with torch.no_grad():
+                for it, (images, labels) in enumerate(test_data_loader):
+                    images = images.to(self.device)
+                    labels = labels.to(self.device)
+                    s_cls = test_model(images, classify=True)
+
+                    pred = s_cls.argmax(dim=1, keepdim=True)
+
+                    total_preds = torch.cat((total_preds, pred.cpu()), dim=0)
+                    total_labels = torch.cat((total_labels, labels.cpu()), dim=0)
+
+                    correct += pred.eq(labels.view_as(pred)).sum().item()
+
+                    meters = {
+                            "acc/best_test_acc": 100. * correct / ((it + 1) * test_data_loader.batch_size),
+                        }
+                    progress_bar.update_iter()
+                    progress_bar.update_task(progress, task, progress._tasks[task], meters)
+        
+        best_test_acc = 100. * correct / total
+        cm = torch.zeros(2, 2, dtype=torch.int)
+        for i in range(len(total_labels)):
+            cm[total_labels[i], total_preds[i]] += 1
+        cm = cm.tolist()
+        cm_string = ";".join([",".join(map(str, sublist)) for sublist in cm])
+        return {'acc/test_acc': test_acc, 'acc/best_test_acc': best_test_acc, 'best_cm': cm_string}
 
 
 

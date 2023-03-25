@@ -129,7 +129,7 @@ def main():
         
         test_dataset = load_dataset.build_dataset(args, split='test', trnsfrm=transform_valtest)
         test_dataset_loader = torch.utils.data.DataLoader(test_dataset,
-            shuffle=True, batch_size=args.batch_size,
+            shuffle=False, batch_size=args.batch_size,
             num_workers=args.num_workers, pin_memory=True, drop_last=False)
     
     # Create models

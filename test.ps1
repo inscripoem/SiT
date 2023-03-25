@@ -11,14 +11,14 @@ if ($DATASET -eq "pets_dist") {
 
 python main.py `
 --batch_size 128 `
---patch_size 8 `
+--patch_size 16 `
 --epochs 800 `
 --lmbda 5 `
 --data_set $DATASET `
 --data_location $DATA_LOCATION `
 --num_workers 2 `
---output_dir "./output/large_data_dist/img_128_patch_8/10000_10000/800_epoch" `
+--output_dir "./output/large_data_dist/img_128_patch_16/15000_5000" `
 --image_size 128 `
 --is_pretrain 1 `
---ratio '10000_10000' `
---tensorboard_log_path "./output/large_data_dist/img_128_patch_8/10000_10000/tensorboard/800_epoch"
+--ratio '15000_5000' `
+--tensorboard_log_path "./output/large_data_dist/img_128_patch_16/tensorboard/15000_5000"

@@ -5,7 +5,10 @@ imageio
 tabulate
 colorama
 scikit-image
+scikit-learn
 rich
 thop
 tensorboard
 gradio
+matplotlib
+adjustText
