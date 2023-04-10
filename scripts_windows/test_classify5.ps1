@@ -11,15 +11,15 @@ if ($DATASET -eq "pets_dist") {
 
 python main.py `
 --batch_size 256 `
---epochs 200 `
+--epochs 50 `
 --warmup_epochs 10 `
 --lr 0.0005 `
 --data_set $DATASET `
 --data_location $DATA_LOCATION `
 --num_workers 4 `
---output_dir "./output/large_data_dist_classify/10000_10000/lr_5e-4_img_128_epoch_200/1" `
+--output_dir ".\output\large_data_dist_classify\finetuning\10000_10000\lr_1e-5_img_128_epoch_50\10" `
 --image_size 128 `
 --is_pretrain 0 `
---ratio '1' `
---tensorboard_log_path "./output/large_data_dist_classify/10000_10000/lr_5e-4_img_128_epoch_200/tensorboard/1" `
---pretrain_model_path "./output/large_data_dist/img_128_patch_16/10000_10000/800_epoch_lmbda_5/checkpoint.pth"
+--ratio '10' `
+--pretrain_model_path "G:\DeepLearning\SiT_docker\output\large_data_dist\img_128_patch_16\10000_10000\checkpoint.pth" `
+--pretrain_adjust_mode "linear"

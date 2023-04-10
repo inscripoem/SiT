@@ -10,11 +10,18 @@ example_input = torch.rand(1, 3, 128, 128)
 student = vits.__dict__['vit_small'](img_size=[128], num_classes=2, patch_size=patch_size)
 embed_dim = student.embed_dim
 
-student = FullPipline(student, CLSHead(embed_dim, 256), RECHead(embed_dim, patch_size=patch_size))
+# student = FullPipline(student, CLSHead(embed_dim, 256), RECHead(embed_dim, patch_size=patch_size))
 
-flops, params = profile(student, (example_input,))
-print(f'Image size: 128x128, Patch size: {patch_size}x{patch_size}')
-print(f"Student FLOPs: {flops/1e9:.2f}G, Params: {params/1e6:.2f}M")
+for k, v in student.named_parameters():
+    if not k.startswith('head'):
+        v.requires_grad = False
+
+for k, v in student.named_parameters():
+    print(v.requires_grad)
+
+#flops, params = profile(student, (example_input,))
+#print(f'Image size: 128x128, Patch size: {patch_size}x{patch_size}')
+#print(f"Student FLOPs: {flops/1e9:.2f}G, Params: {params/1e6:.2f}M")
 
 '''
 pretrain_dict = torch.load('./output/large_data_dist/img_128_patch_16/10000_10000/800_epoch/checkpoint.pth')['student']

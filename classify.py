@@ -35,26 +35,7 @@ class Classify(object):
         self.criterion = nn.CrossEntropyLoss().to(self.device)
         self.val_criterion = nn.CrossEntropyLoss(reduction='sum').to(self.device)
 
-        # load pretrain weight
-        if args.pretrain_model_path:
-            pretrain_dict = torch.load(args.pretrain_model_path)['student']
-            dict_to_load = {}
-            for k, v in pretrain_dict.items():
-                if k.startswith('backbone'):
-                    if v.shape == self.student.state_dict()[k.replace('backbone.', '')].shape:
-                        dict_to_load[k.replace('backbone.', '')] = v
-
-            model_dict = self.student.state_dict()
-            model_dict.update(dict_to_load)
-            self.student.load_state_dict(model_dict, strict=False)
-
-            if args.pretrain_adjust_mode == 'linear':
-                print('Adjusting pretrain weight with linear mode ...')
-                for n, p in self.student.named_parameters():
-                    if not n.startswith('head'):
-                        p.requires_grad = False
-            else:
-                print('Adjusting pretrain weight with finetune mode ...')
+        
 
         default_tensorboard_path = Path(args.output_dir).joinpath("logs")
         self.writter = SummaryWriter(log_dir=default_tensorboard_path if not args.tensorboard_log_path else args.tensorboard_log_path)
@@ -289,7 +270,15 @@ class Classify(object):
             cm[total_labels[i], total_preds[i]] += 1
         cm = cm.tolist()
         cm_string = ";".join([",".join(map(str, sublist)) for sublist in cm])
-        return {'acc/test_acc': test_acc, 'acc/best_test_acc': best_test_acc, 'best_cm': cm_string}
+        precision = cm[1][1] / (cm[1][1] + cm[0][1])
+        recall = cm[1][1] / (cm[1][1] + cm[1][0])
+        f1 = 2 * precision * recall / (precision + recall)
+
+        # Save raw test data
+        with open(Path(self.args.output_dir).joinpath('test_data.json'), 'w') as f:
+            f.write(json.dumps({'pred': total_preds.tolist(), 'label': total_labels.tolist()}))
+
+        return {'acc/test_acc': test_acc, 'acc/best_test_acc': best_test_acc, 'f1_score': f1, 'best_cm': cm_string}
 
 
 

@@ -17,8 +17,8 @@ python main.py `
 --data_set $DATASET `
 --data_location $DATA_LOCATION `
 --num_workers 2 `
---output_dir "./output/large_data_dist/img_128_patch_16/15000_5000" `
+--output_dir "./output/large_data_dist/img_128_patch_16/19750_250" `
 --image_size 128 `
 --is_pretrain 1 `
---ratio '15000_5000' `
---tensorboard_log_path "./output/large_data_dist/img_128_patch_16/tensorboard/15000_5000"
+--ratio '19750_250' `
+--tensorboard_log_path "./output/large_data_dist/img_128_patch_16/tensorboard/19750_250"

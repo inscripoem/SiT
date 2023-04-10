@@ -171,6 +171,29 @@ def main():
         f.write(json.dumps({"flops": f'{flops/1e9:.2f}G', "params": f'{params/1e6:.2f}M',}))
         #f.write(json.dumps(df, indent=4))
     
+    # Load pretrain weight
+    if args.pretrain_model_path:
+        pretrain_dict = torch.load(args.pretrain_model_path)['student']
+        dict_to_load = {}
+        for k, v in pretrain_dict.items():
+            if k.startswith('backbone'):
+                if v.shape == student.state_dict()[k.replace('backbone.', '')].shape:
+                    dict_to_load[k.replace('backbone.', '')] = v
+
+        model_dict = student.state_dict()
+        model_dict.update(dict_to_load)
+        student.load_state_dict(model_dict, strict=False)
+
+        if args.pretrain_adjust_mode == 'linear':
+            print('Adjusting pretrain weight with linear mode ...')
+            for n, p in student.named_parameters():
+                if not n.startswith('head'):
+                    p.requires_grad = False
+        else:
+            for p in student.parameters():
+                p.requires_grad = True
+            print('Adjusting pretrain weight with finetune mode ...')
+
     # Define optimizer
     optimizer = torch.optim.AdamW(utils.get_params_groups(student))
 
