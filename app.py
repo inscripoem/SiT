@@ -40,9 +40,9 @@ def load_dataset(dataset_name = 'Pets', dataset_path = '', img_size=64):
 
 def classify(img, img_size=64):
     global student
-    transform = transforms.Compose([      
-            transforms.Resize(img_size, interpolation=Image.BICUBIC),
-            transforms.ToTensor(),
+    transform = transforms.Compose([   
+            transforms.ToTensor(),   
+            transforms.Resize(img_size),
             transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
         ])
     if student is None:

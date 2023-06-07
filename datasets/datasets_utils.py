@@ -145,6 +145,8 @@ def GMML_drop_rand_patches(X, X_rep=None, drop_type='noise', max_replace=0.7, al
     return X, mask
 
 
+large_data_norm = transforms.Normalize((0.7899575, 0.79051495, 0.8342862), (0.18875578, 0.19259517, 0.14608486))
+
 class DataAugmentationSiT(object):
     def __init__(self, args):
         

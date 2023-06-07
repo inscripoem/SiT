@@ -17,7 +17,7 @@ for k, v in student.named_parameters():
         v.requires_grad = False
 
 for k, v in student.named_parameters():
-    print(v.requires_grad)
+    print(k)
 
 #flops, params = profile(student, (example_input,))
 #print(f'Image size: 128x128, Patch size: {patch_size}x{patch_size}')
