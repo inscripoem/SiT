@@ -508,6 +508,6 @@ def calculate_psnr_ssim(output: torch.Tensor, target: torch.Tensor):
     for i in range(batch_size):
         img_output = output[i]
         img_target = target[i]
-        psnr += skimage.metrics.peak_signal_noise_ratio(img_output, img_target, data_range=1.0)
-        ssim += skimage.metrics.structural_similarity(img_output, img_target, data_range=1.0, channel_axis=0)
+        psnr += skimage.metrics.peak_signal_noise_ratio(img_target, img_output, data_range=1.0)
+        ssim += skimage.metrics.structural_similarity(img_target, img_output, data_range=1.0, channel_axis=0)
     return psnr/batch_size, ssim/batch_size
