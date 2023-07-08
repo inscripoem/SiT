@@ -171,16 +171,14 @@ class DataAugmentationSiT(object):
 
         # first global crop
         self.global_transfo1 = transforms.Compose([
-            transforms.RandomResizedCrop(224, scale=(0.2, 1.), interpolation=Image.BICUBIC),
-            transforms.Resize(args.image_size, interpolation=Image.BICUBIC),
+            transforms.RandomResizedCrop(args.image_size, scale=(0.2, 1.), interpolation=Image.BICUBIC),
             flip_and_color_jitter,
             GaussianBlur(1.0),
             normalize,
         ])
         # second global crop
         self.global_transfo2 = transforms.Compose([
-            transforms.RandomResizedCrop(224, scale=(0.2, 1.), interpolation=Image.BICUBIC),
-            transforms.Resize(args.image_size, interpolation=Image.BICUBIC),
+            transforms.RandomResizedCrop(args.image_size, scale=(0.2, 1.), interpolation=Image.BICUBIC),
             flip_and_color_jitter,
             GaussianBlur(0.1),
             Solarization(0.2),
