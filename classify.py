@@ -179,8 +179,8 @@ class Classify(object):
                         
                         val_loss += self.val_criterion(s_cls, labels).item()  # sum up batch loss
                     meters = {
-                        "acc/val_loss": val_loss / ((it + 1) * val_data_loader.batch_size),
-                        "acc/val_acc": 100. * correct / ((it + 1) * val_data_loader.batch_size),
+                        "acc/val_loss": val_loss / (it * val_data_loader.batch_size + len(images)),
+                        "acc/val_acc": 100. * correct / (it * val_data_loader.batch_size + len(images)),
                     }
                     progress_bar.update_iter()
                     progress_bar.update_task(progress, task, progress._tasks[task], meters)
@@ -227,7 +227,7 @@ class Classify(object):
                     correct += pred.eq(labels.view_as(pred)).sum().item()
 
                     meters = {
-                            "acc/test_acc": 100. * correct / ((it + 1) * test_data_loader.batch_size),
+                            "acc/test_acc": 100. * correct / (it * test_data_loader.batch_size + len(images)),
                         }
                     progress_bar.update_iter()
                     progress_bar.update_task(progress, task, progress._tasks[task], meters)
@@ -259,7 +259,7 @@ class Classify(object):
                     correct += pred.eq(labels.view_as(pred)).sum().item()
 
                     meters = {
-                            "acc/best_test_acc": 100. * correct / ((it + 1) * test_data_loader.batch_size),
+                            "acc/best_test_acc": 100. * correct / (it * test_data_loader.batch_size + len(images)),
                         }
                     progress_bar.update_iter()
                     progress_bar.update_task(progress, task, progress._tasks[task], meters)
